@@ -1,10 +1,13 @@
 import os
-from aiogram import Bot, Dispatcher, types
+import logging
+from aiogram import Bot, Dispatcher, executor, types
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.utils import executor
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
+
+# Настройка логирования
+logging.basicConfig(level=logging.INFO)
 
 # Инициализация
 API_TOKEN = os.getenv('API_TOKEN')
