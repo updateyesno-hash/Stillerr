@@ -1,48 +1,45 @@
-import os
-import logging
-from aiogram import Bot, Dispatcher, executor, types
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
+import asyncio
+from aiogram import Bot, Dispatcher, types, F
+from aiogram.filters import Command
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
-# Установите API_TOKEN в Railway (Variables)
-API_TOKEN = os.getenv('API_TOKEN')
+# Вставьте сюда токен, полученный от BotFather
+TOKEN = "ВАШ_ТОКЕН_ОТ_BOTFATHER"
 
-logging.basicConfig(level=logging.INFO)
-bot = Bot(token=API_TOKEN)
-storage = MemoryStorage()
-dp = Dispatcher(bot, storage=storage)
+bot = Bot(token=TOKEN)
+dp = Dispatcher()
 
-class AuthForm(StatesGroup):
-    phone = State()
-    code = State()
+# Создаем клавиатуру с кнопкой запроса номера
+def get_contact_keyboard():
+    button = KeyboardButton(
+        text="Отправить номер телефона", 
+        request_contact=True
+    )
+    return ReplyKeyboardMarkup(
+        keyboard=[[button]], 
+        resize_keyboard=True, 
+        one_time_keyboard=True
+    )
 
-def get_phone_keyboard():
-    keyboard = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-    keyboard.add(KeyboardButton("Отправить номер телефона", request_contact=True))
-    return keyboard
+# Команда /start
+@dp.message(Command("start"))
+async def start_handler(message: types.Message):
+    await message.answer(
+        "Привет! Нажми на кнопку ниже, чтобы поделиться своим номером:",
+        reply_markup=get_contact_keyboard()
+    )
 
-@dp.message_handler(commands=['start'])
-async def start(message: types.Message):
-    await message.answer("Для входа нажмите кнопку:", reply_markup=get_phone_keyboard())
-    await AuthForm.phone.set()
+# Обработка полученного контакта
+@dp.message(F.contact)
+async def contact_handler(message: types.Message):
+    phone = message.contact.phone_number
+    name = message.contact.first_name
+    await message.answer(f"Спасибо, {name}! Я получил ваш номер: {phone}")
 
-@dp.message_handler(content_types=types.ContentType.CONTACT, state=AuthForm.phone)
-async def get_phone(message: types.Message, state: FSMContext):
-    await state.update_data(phone=message.contact.phone_number)
-    await message.answer("Номер принят. Введите код подтверждения:", reply_markup=ReplyKeyboardRemove())
-    await AuthForm.code.set()
+async def main():
+    print("Бот запущен...")
+    await dp.start_polling(bot)
 
-@dp.message_handler(state=AuthForm.code)
-async def get_code(message: types.Message, state: FSMContext):
-    data = await state.get_data()
-    phone = data['phone']
-    code = message.text
-    
-    await message.answer(f"Данные получены.\nТелефон: {phone}\nКод: {code}")
-    await state.finish()
-
-if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
+if __name__ == "__main__":
+    asyncio.run(main())
     
