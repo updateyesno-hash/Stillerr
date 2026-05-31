@@ -1,4 +1,1 @@
-aiogram
-asyncio
-telethon
-python-socks
+aiogram==2.25.1
